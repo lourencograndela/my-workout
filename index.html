@@ -304,6 +304,45 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .cal-day.future{opacity:0.3;cursor:default;pointer-events:none;}
 .cal-edit-hint{font-size:10px;color:var(--muted);text-align:center;padding:8px 0 2px;}
 
+
+/* Page breathing room - top and bottom of every page */
+.page > *:first-child { margin-top: 0; }
+.page-spacer-top  { height: 12px; }
+.page-spacer-bottom { height: 120px; }
+
+/* Congrats modal */
+#congratsOverlay{
+  position:fixed;inset:0;z-index:900;
+  background:rgba(8,8,13,0.97);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:30px;
+}
+#congratsOverlay.show{display:flex;}
+.congrats-emoji{font-size:80px;line-height:1;margin-bottom:20px;animation:popIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275);}
+.congrats-title{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:3px;color:var(--accent);line-height:1;margin-bottom:10px;animation:slideUp 0.4s ease 0.1s both;}
+.congrats-sub{font-size:16px;color:var(--muted);margin-bottom:8px;animation:slideUp 0.4s ease 0.2s both;}
+.congrats-stats{background:rgba(232,255,71,0.08);border:1px solid rgba(232,255,71,0.2);border-radius:16px;padding:16px 24px;margin:20px 0 28px;animation:slideUp 0.4s ease 0.3s both;}
+.congrats-stat-row{display:flex;gap:32px;justify-content:center;}
+.congrats-stat{text-align:center;}
+.congrats-stat-val{font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--accent);}
+.congrats-stat-lbl{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.congrats-btn{background:var(--accent);color:#0a0a0f;border:none;border-radius:14px;padding:16px 40px;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:700;cursor:pointer;animation:slideUp 0.4s ease 0.4s both;}
+.congrats-btn:active{transform:scale(0.97);}
+@keyframes popIn{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+
+/* Custom confirm modal (replaces browser confirm() which breaks on iOS PWA) */
+#confirmOverlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.8);display:none;align-items:center;justify-content:center;padding:24px;}
+#confirmOverlay.show{display:flex;}
+.confirm-box{background:#1a1a26;border:1px solid var(--border);border-radius:20px;padding:24px 22px 20px;width:100%;max-width:320px;text-align:center;}
+.confirm-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:var(--text);margin-bottom:8px;}
+.confirm-msg{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:22px;}
+.confirm-btns{display:flex;gap:10px;}
+.confirm-cancel{flex:1;padding:13px;background:transparent;border:1.5px solid var(--border);border-radius:12px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;}
+.confirm-ok{flex:1;padding:13px;background:var(--accent2);border:none;border-radius:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;}
+.confirm-ok.danger{background:#cc2233;}
+
 </style>
 </head>
 <body>
@@ -460,6 +499,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       </div>
     </div>
   </div>
+  <div class="page-spacer-bottom"></div>
 </div>
 
 <!-- WORKOUT -->
@@ -487,6 +527,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   </div>
   <div id="workoutContainer"></div>
   <button class="reset-btn" onclick="resetWorkout()">↺ Reset Workout</button>
+  <div class="page-spacer-bottom"></div>
 </div>
 
 <!-- BODY MAP -->
@@ -541,6 +582,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     <p>Weight history week by week</p>
   </div>
   <div class="tracker-body" id="trackerBody"></div>
+  <div class="page-spacer-bottom"></div>
 </div>
 
 <!-- SETTINGS -->
@@ -569,6 +611,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     </div>
     <p style="font-size:10px;color:var(--muted);margin-top:10px;line-height:1.6;">Export a <strong style="color:var(--text)">.json</strong> backup before updating the app to keep all your data safe.</p>
   </div>
+  <div class="page-spacer-bottom"></div>
 </div>
 
 <script>
@@ -609,8 +652,8 @@ const exercises = [
 const SS_COLOR={A:'#ff4757',B:'#ff6b35',C:'#e8ff47',D:'#2ed573',E:'#1e90ff'};
 
 /* ══════════════════ STORAGE ══════════════════ */
-function ld(k,d){try{const v=localStorage.getItem(k);return v!=null?JSON.parse(v):d;}catch{return d;}}
-function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
+function ld(k,d){try{const v=localStorage.getItem(k);return v!=null?JSON.parse(v):d;}catch(e){return d;}}
+function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 
 let prData     = ld('prData',{});
 let setsDone     = ld('setsDone',{});
@@ -681,9 +724,10 @@ function addActivityNow(type){
   } else {
     surfViewOffset=0;renderSurfCounter();
   }
-  toast(type==='surf'?'🏄 Surf session logged!':'💪 Workout logged!');
+  if(type==='surf') toast('🏄 Surf session logged!');
 }
 function renderSurfCounter(){
+  if(!document.getElementById('surfCount')) return;
   const cnt=getActivity('surf',surfViewOffset);
   const key=activityMonthOffset(surfViewOffset);
   const [y,m]=key.split('-');
@@ -694,6 +738,7 @@ function renderSurfCounter(){
   document.getElementById('surfSubBtn').style.display=(isNow&&cnt>0)?'flex':'none';
 }
 function renderWorkoutCounter(){
+  if(!document.getElementById('workoutCount')) return;
   const cnt=getActivity('workout',workoutViewOffset);
   const key=activityMonthOffset(workoutViewOffset);
   const [y,m]=key.split('-');
@@ -746,14 +791,33 @@ function saveGoal(){
 }
 function toggleWeekPip(wid,idx){
   const wk=getWeekKey(weekOffset);
+  const wasChecked=!!(weekLog[wk]&&weekLog[wk][wid]&&weekLog[wk][wid][idx]);
   if(!weekLog[wk]) weekLog[wk]={};
   if(!weekLog[wk][wid]) weekLog[wk][wid]=[];
   while(weekLog[wk][wid].length<=idx) weekLog[wk][wid].push(false);
   weekLog[wk][wid][idx]=!weekLog[wk][wid][idx];
   sv('weekLog',weekLog);
+  // Sync workout counter when toggling current week
+  if(weekOffset===0){
+    const key=nowMonthKey();
+    if(!activity[key]) activity[key]={surf:0,workout:0};
+    if(!wasChecked){
+      activity[key].workout=(activity[key].workout||0)+1;
+      const today=new Date().getDate();
+      if(!workoutDays[key]) workoutDays[key]=[];
+      if(!workoutDays[key].includes(today)){workoutDays[key].push(today);workoutDays[key].sort((a,b)=>a-b);}
+      sv('workoutDays',workoutDays);
+    } else {
+      activity[key].workout=Math.max(0,(activity[key].workout||0)-1);
+    }
+    sv('activity',activity);
+    renderWorkoutCounter();
+    renderMonthCal();
+  }
   renderWeeklyGoal();
 }
 function renderWeeklyGoal(){
+  if(!document.getElementById('weeklyWorkouts')) return;
   const wk=getWeekKey(weekOffset);
   const wData=weekLog[wk]||{};
   document.getElementById('weekLabel').textContent=weekLabel(weekOffset);
@@ -806,7 +870,7 @@ function initWeekNav(){
 
 
 function switchAvgTab(wid){activeWorkoutId=wid;}
-function selectWorkout(wid){_workoutCompleteFired=false;
+function selectWorkout(wid){_workoutCompleteFired=false;_congratsShown=false;
   activeWorkoutId=wid;
   document.querySelectorAll('.ws-btn:not(.locked)').forEach(b=>b.classList.remove('active-w'));
   document.getElementById('ws-'+wid).classList.add('active-w');
@@ -956,7 +1020,7 @@ function getMuscleSessionsThisMonth(muscleId){
   let count=0;
   const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   exs.forEach(ex=>{
-    const hist=prData[ex.id]?.history||[];
+    const hist=(prData[ex.id]&&prData[ex.id].history)||[];
     // dates are like "15 Mar" - check if any entries are from this month/year
     const thisMonthStr=monthNames[mo];
     const matchesThisMonth=hist.some(h=>{
@@ -987,7 +1051,7 @@ function openMuscleDetail(muscleId){
   </div>`;
 
   exs.forEach(ex=>{
-    const hist=prData[ex.id]?.history||[];
+    const hist=(prData[ex.id]&&prData[ex.id].history)||[];
     html+=`<div class="t-card" style="border-color:${col}33">
       <div class="t-name">${ex.name}</div><div class="t-target" style="color:${col}">${ex.target}</div>`;
     if(!hist.length){html+=`<div class="t-nodata">No data yet — save a PR during workout</div>`;}
@@ -1041,14 +1105,14 @@ function savePR(id){
   const val=input.value.trim();if(!val)return;
   if(!prData[id])prData[id]={current:'',history:[]};
   const today=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
-  if(prData[id].history[0]?.date===today)prData[id].history[0].value=val;
+  if(prData[id].history[0]&&prData[id].history[0].date===today)prData[id].history[0].value=val;
   else{prData[id].history.unshift({date:today,value:val});prData[id].history=prData[id].history.slice(0,12);}
   prData[id].current=val;sv('prData',prData);
   input.style.borderColor='#e8ff47';setTimeout(()=>{if(input)input.style.borderColor='';},900);
   const hList=document.getElementById('hist-'+id);if(hList)hList.innerHTML=buildHistHTML(id);
   const hBtn=document.getElementById('hbtn-'+id);if(hBtn)hBtn.style.display=prData[id].history.length?'inline':'none';
 }
-function buildHistHTML(id){return(prData[id]?.history||[]).map(h=>`<div class="hist-entry"><span class="he-date">${h.date}</span><span class="he-val">${h.value}</span></div>`).join('');}
+function buildHistHTML(id){return((prData[id]&&prData[id].history)||[]).map(h=>`<div class="hist-entry"><span class="he-date">${h.date}</span><span class="he-val">${h.value}</span></div>`).join('');}
 function toggleHist(id){const l=document.getElementById('hist-'+id),b=document.getElementById('hbtn-'+id);l.classList.toggle('open');b.textContent=l.classList.contains('open')?'hide ▲':'history ▼';}
 
 function toggleCheck(exId){
@@ -1073,11 +1137,11 @@ function toggleCheck(exId){
     pendingChecks[ss]={};
     sv('setsDone',setsDone);sv('pendingChecks',pendingChecks);
     if(newCount===3){
+      // Show PR popup then handle completion after
       setTimeout(()=>showPRPopup(ss),300);
     } else {
       setTimeout(()=>startRestTimer(ss),300);
     }
-    checkWorkoutComplete();
   }
   renderWorkout();
 }
@@ -1089,13 +1153,33 @@ function updateProgress(){
   document.getElementById('progressBar').style.width=pct+'%';
   document.getElementById('progressText').textContent=`${doneSets} / ${totalSets} sets done`;
   document.getElementById('progressPct').textContent=pct+'%';
+  // Trigger congrats when 100% complete
+  if(pct===100 && !_congratsShown){
+    _congratsShown=true;
+    try{
+      clearInterval(timerInt);
+      var tov=document.getElementById('timerOverlay');
+      if(tov)tov.classList.remove('show');
+      var pov=document.getElementById('prPopupOverlay');
+      if(pov)pov.classList.remove('show');
+      addActivityNow('workout');
+      logWorkoutToWeek(activeWorkoutId||'w1');
+      setTimeout(function(){
+        try{ showCongrats(); }
+        catch(e){ toast('ERR showCongrats: '+e.message); }
+      }, 400);
+    }catch(e){ toast('ERR complete: '+e.message); }
+  }
 }
 function resetWorkout(){
-  if(!confirm("Reset today's workout? PRs are kept."))return;
-  setsDone={};pendingChecks={};restingSS=null;
-  sv('setsDone',setsDone);sv('pendingChecks',pendingChecks);
-  _workoutCompleteFired=false;
-  renderWorkout();
+  appConfirm("Reset Workout","Reset today's workout? PRs are kept.",'Reset').then(ok=>{
+    if(!ok)return;
+    setsDone={};pendingChecks={};restingSS=null;
+    sv('setsDone',setsDone);sv('pendingChecks',pendingChecks);
+    _workoutCompleteFired=false;_congratsShown=false;
+    renderWorkout();
+    toast('↺ Workout reset');
+  });
 }
 function renderWorkout(){
   const container=document.getElementById('workoutContainer');if(!container)return;
@@ -1113,7 +1197,7 @@ function renderWorkout(){
     h+=`<div class="ss-group${locked?' ss-locked':''}">`;
     exs.forEach((ex,i)=>{
       const chk=!!(pendingChecks[ss]&&pendingChecks[ss][ex.id]);
-      const pr=prData[ex.id]?.current||'';
+      const pr=(prData[ex.id]&&prData[ex.id].current)||'';
       if(i>0)h+=`<div class="connector" style="background:linear-gradient(180deg,${col}55,transparent)"></div>`;
       h+=`<div class="ex-card${chk?' done':''}"><div class="ex-card-inner">
         <div class="ex-fig">${getFig(ex.fig)}</div>
@@ -1160,7 +1244,7 @@ function renderTracker(){
   Object.entries(groups).forEach(([ss,exs])=>{
     html+=`<div class="t-section-label" style="color:${SS_COLOR[ss]}">⬡ Superset ${ss}</div>`;
     exs.forEach(ex=>{
-      const hist=prData[ex.id]?.history||[];
+      const hist=(prData[ex.id]&&prData[ex.id].history)||[];
       html+=`<div class="t-card"><div class="t-name">${ex.name}</div><div class="t-target">${ex.target}</div>`;
       if(!hist.length)html+=`<div class="t-nodata">No data yet — save a PR during workout</div>`;
       else{
@@ -1193,24 +1277,29 @@ function importData(event){
   reader.onload=(e)=>{
     try{
       const p=JSON.parse(e.target.result);if(!p.prData){toast('❌ Invalid file');return;}
-      if(!confirm(`Import backup from ${p.exportedAt?new Date(p.exportedAt).toLocaleDateString():'unknown'}?\n\nThis replaces all current data.`))return;
-      prData=p.prData||{};setsDone=p.setsDone||{};pendingChecks=p.pendingChecks||{};activity=p.activity||{};
-      weekGoal=p.weekGoal||4;weekLog=p.weekLog||{};phases=p.phases||{};
-      workoutLog=p.workoutLog||{};muscleLog=p.muscleLog||{};
-      sv('prData',prData);sv('setsDone',setsDone);sv('pendingChecks',pendingChecks);sv('activity',activity);
-      sv('weekGoal',weekGoal);sv('weekLog',weekLog);sv('phases',phases);
-      sv('workoutLog',workoutLog);sv('muscleLog',muscleLog);
-      workoutDays=p.workoutDays||{};sv('workoutDays',workoutDays);
-      toast('✅ Data imported!');initAll();
-    }catch{toast('❌ Could not read file');}
+      const importDate=p.exportedAt?new Date(p.exportedAt).toLocaleDateString():'unknown';
+      appConfirm('Import Backup',`Replace all data with backup from ${importDate}?`,'Import',true).then(ok=>{
+        if(!ok)return;
+        prData=p.prData||{};setsDone=p.setsDone||{};pendingChecks=p.pendingChecks||{};activity=p.activity||{};
+        weekGoal=p.weekGoal||4;weekLog=p.weekLog||{};phases=p.phases||{};
+        workoutLog=p.workoutLog||{};muscleLog=p.muscleLog||{};
+        sv('prData',prData);sv('setsDone',setsDone);sv('pendingChecks',pendingChecks);sv('activity',activity);
+        sv('weekGoal',weekGoal);sv('weekLog',weekLog);sv('phases',phases);
+        sv('workoutLog',workoutLog);sv('muscleLog',muscleLog);
+        workoutDays=p.workoutDays||{};sv('workoutDays',workoutDays);
+        toast('✅ Data imported!');initAll();
+      });
+    }catch(e){toast('❌ Could not read file');}
   };
   reader.readAsText(file);event.target.value='';
 }
 function clearAllData(){
-  if(!confirm('⚠️ Delete ALL data permanently?\n\nThis cannot be undone.'))return;
-  ['prData','setsDone','pendingChecks','activity','weekGoal','weekLog','phases','workoutLog','muscleLog','workoutDays'].forEach(k=>localStorage.removeItem(k));
-  prData={};setsDone={};pendingChecks={};activity={};weekGoal=4;weekLog={};phases={};workoutLog={};muscleLog={};workoutDays={};
-  toast('🗑️ All data cleared');initAll();
+  appConfirm('Delete All Data','This will permanently delete all your PRs, sessions and settings. Cannot be undone.','Delete Everything',true).then(ok=>{
+    if(!ok)return;
+    ['prData','setsDone','pendingChecks','activity','weekGoal','weekLog','phases','workoutLog','muscleLog','workoutDays'].forEach(k=>localStorage.removeItem(k));
+    prData={};setsDone={};pendingChecks={};activity={};weekGoal=4;weekLog={};phases={};workoutLog={};muscleLog={};workoutDays={};
+    toast('🗑️ All data cleared');initAll();
+  });
 }
 
 /* ══════════════════ NAV ══════════════════ */
@@ -1219,7 +1308,7 @@ function showPage(name){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   document.getElementById('nav-'+name).classList.add('active');
-  if(name==='dash'){renderSurfCounter();renderWorkoutCounter();renderWeeklyGoal();renderPhasesCalendar();}
+  if(name==='dash'){renderSurfCounter();renderWorkoutCounter();renderWeeklyGoal();renderPhasesCalendar();renderMonthCal();}
   if(name==='body'){document.getElementById('muscleDetail').classList.remove('show');document.getElementById('bodyMapView').style.display='';initBodyCanvas();}
   if(name==='tracker')renderTracker();
   if(name==='workout')renderWorkout();
@@ -1234,7 +1323,7 @@ function showPRPopup(ss){
   const col=SS_COLOR[ss];
   let h='';
   ssExs.forEach(ex=>{
-    const cur=prData[ex.id]?.current||'';
+    const cur=(prData[ex.id]&&prData[ex.id].current)||'';
     const km=cur.match(/([\d.]+)\s*kg/i),rm=cur.match(/(\d+)\s*(?:rep|x|×)/i);
     h+=`<div class="pr-popup-ex">
       <div class="pr-popup-ex-name" style="color:${col}">${ex.name}</div>
@@ -1256,7 +1345,8 @@ function showPRPopup(ss){
 }
 function savePRPopup(){
   if(!_ppSS)return;
-  const ssExs=exercises.filter(e=>e.superset===_ppSS);
+  const ss=_ppSS;
+  const ssExs=exercises.filter(e=>e.superset===ss);
   const today=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
   ssExs.forEach(ex=>{
     const kg=(document.getElementById('ppkg-'+ex.id)||{}).value||'';
@@ -1271,22 +1361,83 @@ function savePRPopup(){
     } else {prData[ex.id].history[0].value=val;}
     sv('prData',prData);
   });
-  const ss=_ppSS; closePRPopup();
-  startRestTimer(ss);
+  closePRPopup();
   toast('💪 PRs saved!');
+  afterSet3(ss);
 }
-function skipPRPopup(){const ss=_ppSS;closePRPopup();startRestTimer(ss);}
+function skipPRPopup(){
+  const ss=_ppSS;
+  closePRPopup();
+  afterSet3(ss);
+}
 function closePRPopup(){document.getElementById('prPopupOverlay').classList.remove('show');_ppSS=null;}
 
 /* ══════════════════ WORKOUT COMPLETE ══════════════════ */
 let _workoutCompleteFired=false;
-function checkWorkoutComplete(){
-  if(_workoutCompleteFired)return;
+let _congratsShown=false;
+let activeWorkoutId='w1';
+
+function afterSet3(ss){
+  // Congrats is handled by updateProgress detecting 100%
+  // Just start rest timer if workout not yet complete
   const ssets=[...new Set(exercises.map(e=>e.superset))];
-  if(!ssets.every(ss=>(setsDone[ss]||0)>=3))return;
-  _workoutCompleteFired=true;
-  addActivityNow('workout');
-  setTimeout(()=>toast('🎉 Workout complete! Great job! 💪'),700);
+  const allDone=ssets.every(s=>(setsDone[s]||0)>=3);
+  if(!allDone) startRestTimer(ss);
+}
+function finishSet3(ss){
+  afterSet3(ss);
+}
+
+function checkWorkoutComplete(){
+  // Not used - updateProgress handles this now
+}
+
+function logWorkoutToWeek(wid){
+  const wk = getWeekKey(0);
+  if(!weekLog[wk]) weekLog[wk]={};
+  if(!weekLog[wk][wid]) weekLog[wk][wid]=[];
+  // Find first empty slot this week
+  let placed = false;
+  for(let i=0; i<weekGoal; i++){
+    if(!weekLog[wk][wid][i]){
+      while(weekLog[wk][wid].length<=i) weekLog[wk][wid].push(false);
+      weekLog[wk][wid][i]=true;
+      placed=true;
+      break;
+    }
+  }
+  if(!placed){
+    // All slots full - add one more
+    weekLog[wk][wid].push(true);
+  }
+  sv('weekLog',weekLog);
+}
+
+function showCongrats(){
+  try{
+    var ssets=[...new Set(exercises.map(e=>e.superset))];
+    var totalSets=ssets.length*3;
+    var monthCount=getActivity('workout',0);
+    var wk=getWeekKey(0);
+    var wData=weekLog[wk]||{};
+    var weekCount=WORKOUT_TYPES.reduce(function(s,wt){return (wData[wt.id]||[]).filter(Boolean).length+s;},0);
+    var el;
+    el=document.getElementById('congratsSets');if(el)el.textContent=totalSets;
+    el=document.getElementById('congratsMonth');if(el)el.textContent=monthCount;
+    el=document.getElementById('congratsWeek');if(el)el.textContent=weekCount;
+    el=document.getElementById('congratsOverlay');
+    if(el){ el.classList.add('show'); }
+    else { toast('ERR: congratsOverlay not found!'); }
+  }catch(e){ toast('ERR showCongrats: '+e.message); }
+}
+
+function closeCongratsAndReset(){
+  document.getElementById('congratsOverlay').classList.remove('show');
+  setsDone={};pendingChecks={};restingSS=null;
+  _workoutCompleteFired=false;_congratsShown=false;
+  sv('setsDone',setsDone);sv('pendingChecks',pendingChecks);
+  renderWorkout();
+  setTimeout(()=>showPage('dash'),100);
 }
 
 
@@ -1335,6 +1486,7 @@ function toggleWorkoutDay(day) {
 }
 
 function renderMonthCal() {
+  if(!document.getElementById('monthCalGrid')) return;
   const key = _calMonthKey(_calOffset);
   const [y, m] = key.split('-').map(Number);
   const today = new Date();
@@ -1367,6 +1519,25 @@ function renderMonthCal() {
   document.getElementById('monthCalGrid').innerHTML = html;
 }
 
+
+/* ══════════════════ CUSTOM CONFIRM ══════════════════ */
+let _confirmResolve = null;
+function appConfirm(title, msg, okLabel='Confirm', danger=false){
+  return new Promise(resolve=>{
+    _confirmResolve = resolve;
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMsg').textContent   = msg;
+    const btn = document.getElementById('confirmOkBtn');
+    btn.textContent = okLabel;
+    btn.className   = 'confirm-ok' + (danger?' danger':'');
+    document.getElementById('confirmOverlay').classList.add('show');
+  });
+}
+function confirmResolve(val){
+  document.getElementById('confirmOverlay').classList.remove('show');
+  if(_confirmResolve){ _confirmResolve(val); _confirmResolve=null; }
+}
+
 /* ══════════════════ INIT ══════════════════ */
 function initAll(){
   updateGreeting();
@@ -1380,6 +1551,44 @@ if(document.readyState==='loading'){
   initActivityButtons();initWeekNav();initPhaseSelects();initAll();
 }
 </script>
+
+
+
+<!-- CUSTOM CONFIRM MODAL -->
+<div id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirmTitle">Are you sure?</div>
+    <div class="confirm-msg"   id="confirmMsg"></div>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" onclick="confirmResolve(false)">Cancel</button>
+      <button class="confirm-ok"     id="confirmOkBtn" onclick="confirmResolve(true)">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONGRATS MODAL -->
+<div id="congratsOverlay">
+  <div class="congrats-emoji">🏆</div>
+  <div class="congrats-title">Workout<br>Complete!</div>
+  <div class="congrats-sub">You crushed it today 💪</div>
+  <div class="congrats-stats">
+    <div class="congrats-stat-row">
+      <div class="congrats-stat">
+        <div class="congrats-stat-val" id="congratsSets">15</div>
+        <div class="congrats-stat-lbl">Sets Done</div>
+      </div>
+      <div class="congrats-stat">
+        <div class="congrats-stat-val" id="congratsMonth">1</div>
+        <div class="congrats-stat-lbl">This Month</div>
+      </div>
+      <div class="congrats-stat">
+        <div class="congrats-stat-val" id="congratsWeek">1</div>
+        <div class="congrats-stat-lbl">This Week</div>
+      </div>
+    </div>
+  </div>
+  <button class="congrats-btn" onclick="closeCongratsAndReset()">Back to Dashboard</button>
+</div>
 
 <!-- PR POPUP MODAL -->
 <div class="pr-popup-overlay" id="prPopupOverlay">
